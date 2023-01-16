@@ -4,17 +4,17 @@ import { UserList, UserShow, UserCreate, UserEdit } from './users';
 import { Admin, Resource } from 'react-admin';
 import {
   FirebaseDataProvider,
-  FirebaseAuthProvider
+  FirebaseAuthProvider,
 } from 'react-admin-firebase';
 
-import firebase from 'firebase/compat/app';
+import firebase from "firebase/compat/app";
 
 import UserIcon from '@material-ui/icons/People';
 import CommentIcon from '@material-ui/icons/Comment';
 
-import * as Posts from './posts';
-import * as Users from './users';
-import * as Comments from './comments';
+import * as Posts from "./posts";
+import * as Users from "./users";
+import * as Comments from "./comments";
 
 import CustomLoginPage from './CustomLoginPage';
 import EventMonitor from './EventMonitor';
@@ -23,21 +23,17 @@ let firebaseConfig;
 try {
   firebaseConfig = JSON.parse(process.env.REACT_APP_FIREBASE_CONFIG);
 } catch (error) {
-  console.error(
-    "Error parsing (maybe quotes aren't escaped?): ",
-    { REACT_APP_FIREBASE_CONFIG: process.env.REACT_APP_FIREBASE_CONFIG },
-    error
-  );
+  console.error('Error parsing (maybe quotes aren\'t escaped?): ', {REACT_APP_FIREBASE_CONFIG: process.env.REACT_APP_FIREBASE_CONFIG}, error);
 }
 
 const firebaseApp = firebase.initializeApp(firebaseConfig);
-export const storage = firebase.storage(firebaseApp);
-console.log({ firebaseConfig, firebaseApp });
+export const storage = firebase.storage(firebaseApp)
+console.log({firebaseConfig, firebaseApp});
 
 const authProvider = FirebaseAuthProvider(firebaseConfig);
 const dataProvider = FirebaseDataProvider(firebaseConfig, {
   logging: true,
-  rootRef: 'root/ned_cms',
+  // rootRef: 'rootrefcollection/QQG2McwjR2Bohi9OwQzP',
   app: firebaseApp,
   // watch: ['posts'];
   // dontwatch: ['comments'];
@@ -45,11 +41,11 @@ const dataProvider = FirebaseDataProvider(firebaseConfig, {
   // disableMeta: true
   dontAddIdFieldToDoc: true,
   lazyLoading: {
-    enabled: true
+    enabled: true,
   },
   firestoreCostsLogger: {
-    enabled: true
-  }
+    enabled: true,
+  },
 });
 
 class App extends React.Component {
@@ -69,7 +65,7 @@ class App extends React.Component {
             edit={PostEdit}
           />
           <Resource
-            name="deals"
+            name="users"
             icon={UserIcon}
             list={UserList}
             show={UserShow}
