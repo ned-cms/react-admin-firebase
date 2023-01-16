@@ -1,71 +1,73 @@
-import { MakeMockClient } from "./utils/test-helpers";
-import { Update } from "../../src/providers/commands";
+import { MakeMockClient } from './utils/test-helpers';
+import { Update } from '../../src/providers/commands';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-describe("api methods", () => {
-  test("FireClient update doc", async () => {
+describe('api methods', () => {
+  test('FireClient update doc', async () => {
     const client = await MakeMockClient({ disableMeta: true });
-    const id = "testsss123";
-    const collName = "t2";
-    const docRef = client.fireWrapper.dbGetCollection(collName).doc(id);
-    await docRef.set({ name: "Jim" });
+    const id = 'testsss123';
+    const collName = 't2';
+    const docRef = doc(client.fireWrapper.dbGetCollection(collName), id);
+    await setDoc(docRef, { name: 'Jim' });
 
     await Update(
       collName,
       {
         id: id,
-        data: { id: id, title: "asd" },
-        previousData: { id: id, name: "Jim" },
+        data: { id: id, title: 'asd' },
+        previousData: { id: id, name: 'Jim' }
       },
       client
     );
 
-    const res = await docRef.get();
+    const res = await getDoc(docRef);
     expect(res.exists).toBeTruthy();
-    expect(res.get("title")).toBe("asd");
+    expect(res.get('title')).toBe('asd');
   }, 100000);
 
-  test("FireClient update doc with transformToDb function provided", async () => {
+  // tslint:disable-next-line:max-line-length
+  test('FireClient update doc with transformToDb function provided', async () => {
     const client = await MakeMockClient({
-      transformToDb: (resourceName, document, id) => {
-        if (resourceName === "users") {
+      transformToDb: (resourceName, document) => {
+        if (resourceName === 'users') {
           return {
             ...document,
-            firstName: document.firstName.toUpperCase(),
+            firstName: document.firstName.toUpperCase()
           };
         }
         return document;
       }
     });
 
-    const id = "user123";
-    const docRef = client.fireWrapper.dbGetCollection("users").doc(id);
-    await docRef.set({ name: "Jim" });
+    const id = 'user123';
+    const docRef = doc(client.fireWrapper.dbGetCollection('users'), id);
+    await setDoc(docRef, { name: 'Jim' });
 
     const previousUser = {
       id,
-      firstName: "Bob",
-      lastName: "Last",
+      firstName: 'Bob',
+      lastName: 'Last'
     };
     const user = {
       ...previousUser,
-      firstName: "John",
+      firstName: 'John'
     };
 
     await Update(
-      "users",
+      'users',
       {
         id: id,
         data: user,
-        previousData: previousUser,
+        previousData: previousUser
       },
       client
     );
 
-    const res = await docRef.get();
+    const res = await getDoc(docRef);
     expect(res.exists).toBeTruthy();
     expect(res.data()).toMatchObject({
-      firstName: "JOHN",
-      lastName: "Last",
+      firstName: 'JOHN',
+      lastName: 'Last'
     });
   }, 100000);
 });

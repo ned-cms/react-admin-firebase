@@ -41,10 +41,10 @@ import {
 } from 'misc/firebase-models';
 
 export class FirebaseWrapper implements IFirebaseWrapper {
+  private readonly app: FireApp;
   private readonly firestore: FireStore;
   private readonly storage: FireStorage;
   private readonly auth: FireAuth;
-  private readonly app: FireApp;
   public options: RAFirebaseOptions;
 
   constructor(inputOptions: RAFirebaseOptions | undefined, firebaseConfig: {}) {

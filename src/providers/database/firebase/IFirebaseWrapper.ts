@@ -1,3 +1,6 @@
+import 'firebase/compat/firestore';
+import 'firebase/compat/storage';
+
 import { RAFirebaseOptions } from '../../options';
 import {
   FireApp,
@@ -11,6 +14,8 @@ import {
   FireStoreCollectionRef,
   FireStoreBatch
 } from 'misc/firebase-models';
+import firebase from 'firebase/compat';
+import firestore = firebase.firestore;
 
 export interface IFirebaseWrapper {
   options: RAFirebaseOptions;
@@ -34,10 +39,11 @@ export interface IFirebaseWrapper {
   serverTimestamp(): FireStoreTimeStamp | Date;
 
   // Deprecated methods
-  fireStorage(): FireStorage;
+  /** @deprecated */
+  fireStorage(): FireStorage | firebase.storage.Storage;
 
   /** @deprecated */
-  db(): FireStore;
+  db(): FireStore | firebase.firestore.Firestore;
   /** @deprecated */
   GetApp(): FireApp;
   /** @deprecated */

@@ -19,7 +19,6 @@ import {
   Query,
   OrderByDirection
 } from 'firebase/firestore';
-import 'firebase/compat/storage';
 
 export type FireUser = User;
 export type FireApp = FirebaseApp;
