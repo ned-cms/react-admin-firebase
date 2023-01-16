@@ -1,5 +1,5 @@
 {
-  "name": "react-admin-firebase",
+  "name": "@ned-cms/react-admin-firebase",
   "description": "A firebase data provider for the React Admin framework",
   "version": "5.0.0",
   "repository": {
