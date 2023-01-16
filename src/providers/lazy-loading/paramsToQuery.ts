@@ -75,11 +75,13 @@ export function getFiltersConstraints(filters: {
   return Object.entries(filters).flatMap(([fieldName, fieldValue]) => {
     if (Array.isArray(fieldValue)) {
       return [where(fieldName, 'in', fieldValue)];
-    } else {
+    } else if (isNaN(fieldValue)) {
       return [
         where(fieldName, '>=', fieldValue),
         where(fieldName, '<', fieldValue)
       ];
+    } else {
+      return [where(fieldName, '==', fieldValue)];
     }
   });
 }
