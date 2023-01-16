@@ -6,11 +6,12 @@ import {
   messageTypes,
   logWarn,
   IFirestoreLogger,
-  parseFireStoreDocument,
+  parseFireStoreDocument
 } from '../../misc';
-import { FireStoreCollectionRef } from 'misc/firebase-models';
+import { FireStoreCollectionRef, FireStoreQuery } from 'misc/firebase-models';
+import { doc, getDoc, getDocs } from 'firebase/firestore';
 
-type IResourceItem = {} & { id: string, deleted?: boolean };
+type IResourceItem = {} & { id: string; deleted?: boolean };
 export interface IResource {
   path: string;
   pathAbsolute: string;
@@ -58,7 +59,7 @@ export class ResourceManager {
   ): Promise<IResource> {
     log('resourceManager.TryGetResourcePromise', {
       relativePath,
-      collectionQuery,
+      collectionQuery
     });
     await this.initPath(relativePath);
 
@@ -77,7 +78,7 @@ export class ResourceManager {
   ) {
     if (this.options?.lazyLoading?.enabled) {
       logWarn('resourceManager.RefreshResource', {
-        warn: 'RefreshResource is not available in lazy loading mode',
+        warn: 'RefreshResource is not available in lazy loading mode'
       });
       throw new Error(
         'react-admin-firebase: RefreshResource is not available in lazy loading mode'
@@ -88,17 +89,20 @@ export class ResourceManager {
     await this.initPath(relativePath);
     const resource = this.resources[relativePath];
 
-    const collection = resource.collection;
-    const query = this.applyQuery(collection, collectionQuery);
-    const newDocs = await query.get();
+    const collectionRef = resource.collection;
+    const collectionOrQuery = this.applyQuery(collectionRef, collectionQuery);
+    const newDocs = await getDocs(collectionOrQuery);
 
-    resource.list = newDocs.docs.map((doc) => parseFireStoreDocument<IResourceItem>(doc));
+    newDocs.forEach(d =>
+      resource.list.push(parseFireStoreDocument<IResourceItem>(d))
+    );
+
     const count = newDocs.docs.length;
     this.flogger.logDocument(count)();
     log('resourceManager.RefreshResource', {
       newDocs,
       resource,
-      collectionPath: collection.path,
+      collectionPath: collectionRef.path
     });
   }
 
@@ -106,7 +110,7 @@ export class ResourceManager {
     await this.initPath(relativePath);
     const resource = this.GetResource(relativePath);
     this.flogger.logDocument(1)();
-    const docSnap = await resource.collection.doc(docId).get();
+    const docSnap = await getDoc(doc(resource.collection, docId));
     if (!docSnap.exists) {
       throw new Error('react-admin-firebase: No id found matching: ' + docId);
     }
@@ -116,7 +120,7 @@ export class ResourceManager {
       resource,
       docId,
       docSnap,
-      result,
+      result
     });
     return result;
   }
@@ -127,7 +131,7 @@ export class ResourceManager {
     const hasBeenInited = !!this.resources[relativePath];
     log('resourceManager.initPath()', {
       absolutePath,
-      hasBeenInited,
+      hasBeenInited
     });
     if (hasBeenInited) {
       log('resourceManager.initPath() has been initialized already...');
@@ -139,14 +143,14 @@ export class ResourceManager {
       collection,
       list,
       path: relativePath,
-      pathAbsolute: absolutePath,
+      pathAbsolute: absolutePath
     };
     this.resources[relativePath] = resource;
     log('resourceManager.initPath() setting resource...', {
       resource,
       allResources: this.resources,
       collection: collection,
-      collectionPath: collection.path,
+      collectionPath: collection.path
     });
   }
 
@@ -177,13 +181,13 @@ export class ResourceManager {
   private applyQuery(
     collection: FireStoreCollectionRef,
     collectionQuery?: messageTypes.CollectionQueryType
-  ): FireStoreCollectionRef {
+  ): FireStoreCollectionRef | FireStoreQuery {
     const collRef = collectionQuery ? collectionQuery(collection) : collection;
 
     log('resourceManager.applyQuery() ...', {
       collection,
       collectionQuery: (collectionQuery || '-').toString(),
-      collRef,
+      collRef
     });
     return collRef;
   }

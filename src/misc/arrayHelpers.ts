@@ -9,7 +9,7 @@ export function sortArray(
   data.sort((a: {}, b: {}) => {
     const rawA = get(a, field);
     const rawB = get(b, field);
-    const isAsc = dir === "asc";
+    const isAsc = dir === 'asc';
 
     const isNumberField = Number.isFinite(rawA) && Number.isFinite(rawB);
     if (isNumberField) {
@@ -47,12 +47,12 @@ export function filterArray(
     return data;
   }
   const searchObjs: SearchObj[] = [];
-  Object.keys(searchFields).map((fieldName) => {
+  Object.keys(searchFields).map(fieldName => {
     const fieldValue = searchFields[fieldName];
     const getSubObjects = getFieldReferences(fieldName, fieldValue);
     searchObjs.push(...getSubObjects);
   });
-  const filtered = data.filter((row) =>
+  const filtered = data.filter(row =>
     searchObjs.reduce((acc, cur) => {
       const res = doesRowMatch(row, cur.searchField, cur.searchValue);
       return res && acc;
