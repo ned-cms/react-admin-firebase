@@ -1,11 +1,12 @@
 import { initializeTestEnvironment } from '@firebase/rules-unit-testing';
+import { collection, setDoc, doc, getDocs } from 'firebase/firestore';
 
-import { IFirebaseWrapper } from "../../../src/providers/database/firebase/IFirebaseWrapper";
-import { FirebaseWrapperStub } from "./FirebaseWrapperStub";
-import { RAFirebaseOptions } from "../../../src/providers/options";
-import { FireClient } from "../../../src/providers/database/FireClient";
+import { IFirebaseWrapper } from '../../../src/providers/database/firebase/IFirebaseWrapper';
+import { FirebaseWrapperStub } from './FirebaseWrapperStub';
+import { RAFirebaseOptions } from '../../../src/providers/options';
+import { FireClient } from '../../../src/providers/database/FireClient';
 import { IFirestoreLogger } from '../../../src/misc';
-import { FireApp, FireStore } from '../../../src/misc/firebase-models';
+import { FireStorage, FireStore } from '../../../src/misc/firebase-models';
 
 function makeSafeId(projectId: string): string {
   return projectId.split(' ').join('').toLowerCase();
@@ -20,24 +21,29 @@ export class BlankLogger implements IFirestoreLogger {
 export async function MakeMockClient(options: RAFirebaseOptions = {}) {
   const randomProjectId = Math.random().toString(32).slice(2, 10);
   const fire = await initFireWrapper(randomProjectId, options);
-  return new FireClient(fire, options, new BlankLogger);
+  return new FireClient(fire, options, new BlankLogger());
 }
 
-export async function initFireWrapper(projectId: string, rafOptions: RAFirebaseOptions = {}): Promise<IFirebaseWrapper> {
+export async function initFireWrapper(
+  projectId: string,
+  rafOptions: RAFirebaseOptions = {}
+): Promise<IFirebaseWrapper> {
   const safeId = makeSafeId(projectId);
-  const testOptions = { projectId: safeId, firestore: { host: 'localhost', port: 8080 }};
+  const testOptions = {
+    projectId: safeId,
+    firestore: { host: 'localhost', port: 8080 }
+  };
   const enivornment = await initializeTestEnvironment(testOptions);
   const context = enivornment.unauthenticatedContext();
-  const fire: IFirebaseWrapper = new FirebaseWrapperStub(
+  return new FirebaseWrapperStub(
     // Slight (inconseqential) mismatch between test API and actual API
-    context.firestore() as FireStore,
-    context as FireApp,
-    rafOptions,
+    context.firestore(),
+    context.storage(),
+    rafOptions
   );
-  return fire;
 }
 
-export const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
+export const sleep = (ms: number) => new Promise(res => setTimeout(res, ms));
 
 export async function createDoc(
   db: FireStore,
@@ -45,19 +51,18 @@ export async function createDoc(
   docName: string,
   obj: {}
 ): Promise<void> {
-  await db.collection(collectionName).doc(docName).set(obj);
+  await setDoc(doc(collection(db, collectionName), docName), obj);
 }
 
 export async function getDocsFromCollection(
   db: FireStore,
   collectionName: string
 ): Promise<any[]> {
-  const allDocs = await db.collection(collectionName).get();
+  const allDocs = await getDocs(collection(db, collectionName));
   const docsData = await Promise.all(
-    allDocs.docs.map((doc) =>
-    ({
-      ...doc.data(),
-      id: doc.id
+    allDocs.docs.map(d => ({
+      ...d.data(),
+      id: d.id
     }))
   );
   return docsData;

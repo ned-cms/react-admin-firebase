@@ -1,3 +1,6 @@
+import { collection, doc, writeBatch } from 'firebase/firestore';
+import { getDownloadURL, ref, uploadBytesResumable } from 'firebase/storage';
+
 import { IFirebaseWrapper } from '../../../src/providers/database/firebase/IFirebaseWrapper';
 import { RAFirebaseOptions } from '../../../src/providers/options';
 import {
@@ -9,52 +12,65 @@ import {
   FireStore,
   FireStoreBatch,
   FireStoreCollectionRef,
-  FireUploadTaskSnapshot, 
-  FireUser,
+  FireUploadTaskSnapshot,
+  FireUser
 } from '../../../src/misc/firebase-models';
 
 export class FirebaseWrapperStub implements IFirebaseWrapper {
   constructor(
-    private firestore: FireStore,
-    private app: FireApp,
-    public options: RAFirebaseOptions,
-  ) { }
+    private firestore: FireStore | any,
+    private storage: FireStorage,
+    public options: RAFirebaseOptions
+  ) {}
+
+  GetApp(): FireApp {
+    throw new Error('Method not implemented.');
+  }
 
   dbGetCollection(absolutePath: string): FireStoreCollectionRef {
-    return this.firestore.collection(absolutePath);
+    return collection(this.firestore, absolutePath);
   }
   dbCreateBatch(): FireStoreBatch {
-    return this.firestore.batch();
+    return writeBatch(this.firestore);
   }
   dbMakeNewId(): string {
-    return this.firestore.collection("collections").doc().id
+    return doc(collection(this.firestore, 'collections')).id;
   }
 
-  public OnUserLogout(callBack: (u: FireUser) => any) {
-
-  }
-  putFile: any = async (storagePath: string, rawFile: any): Promise<FireStoragePutFileResult> => {
-    const task = this.app.storage().ref(storagePath).put(rawFile);
-    const taskResult = new Promise<FireUploadTaskSnapshot>(
-      (res, rej) => task.then(res).catch(rej)
+  // tslint:disable-next-line:no-empty
+  public OnUserLogout(callBack: (u: FireUser) => any) {}
+  putFile: any = async (
+    storagePath: string,
+    rawFile: any
+  ): Promise<FireStoragePutFileResult> => {
+    const task = uploadBytesResumable(ref(this.storage, storagePath), rawFile);
+    const taskResult = new Promise<FireUploadTaskSnapshot>((res, rej) =>
+      task.then(res).catch(rej)
     );
-    const downloadUrl = taskResult.then(t => t.ref.getDownloadURL()).then(url => url as string)
+    const downloadUrl = taskResult
+      .then(t => getDownloadURL(t.ref))
+      .then(url => url as string);
     return {
       task,
       taskResult,
-      downloadUrl,
+      downloadUrl
     };
-  }
+  };
   async getStorageDownloadUrl(fieldSrc: string): Promise<string> {
-    return this.app.storage().ref(fieldSrc).getDownloadURL();
+    return getDownloadURL(ref(this.storage, fieldSrc));
   }
-  authSetPersistence(persistenceInput: 'session' | 'local' | 'none'): Promise<void> {
+  authSetPersistence(
+    persistenceInput: 'session' | 'local' | 'none'
+  ): Promise<void> {
     throw new Error('Method not implemented.');
   }
   authGetUserLoggedIn(): Promise<FireUser> {
-    return { uid: "alice", email: 'alice@test.com' } as any;
+    return { uid: 'alice', email: 'alice@test.com' } as any;
   }
-  authSigninEmailPassword(email: string, password: string): Promise<FireAuthUserCredentials> {
+  authSigninEmailPassword(
+    email: string,
+    password: string
+  ): Promise<FireAuthUserCredentials> {
     throw new Error('Method not implemented.');
   }
   authSignOut(): Promise<void> {
@@ -67,20 +83,12 @@ export class FirebaseWrapperStub implements IFirebaseWrapper {
   // Deprecated methods
 
   /** @deprecated */
-  auth(): FireAuth {
-    return this.app.auth();
-  }
-  /** @deprecated */
-  storage(): FireStorage {
-    return this.app.storage();
+  fireStorage(): FireStorage {
+    return this.storage;
   }
   /** @deprecated */
   db(): FireStore {
     return this.firestore;
-  }
-  /** @deprecated */
-  GetApp() {
-    return this.app;
   }
   /** @deprecated */
   GetUserLogin(): Promise<FireUser> {

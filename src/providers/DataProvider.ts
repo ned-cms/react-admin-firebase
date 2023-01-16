@@ -4,15 +4,15 @@ import {
   logger,
   retrieveStatusCode,
   logError,
-  MakeFirestoreLogger,
-} from "../misc";
-import * as ra from "../misc/react-admin-models";
-import { RAFirebaseOptions } from "./options";
-import { FirebaseWrapper } from "./database/firebase/FirebaseWrapper";
-import { FireApp } from "../misc/firebase-models";
-import { FireClient } from "./database/FireClient";
-import { GetList, GetMany, GetManyReference, GetOne } from "./queries";
-import { Create, Delete, DeleteMany, Update, UpdateMany } from "./commands";
+  MakeFirestoreLogger
+} from '../misc';
+import * as ra from '../misc/react-admin-models';
+import { RAFirebaseOptions } from './options';
+import { FirebaseWrapper } from './database/firebase/FirebaseWrapper';
+import { FireApp } from '../misc/firebase-models';
+import { FireClient } from './database/FireClient';
+import { GetList, GetMany, GetManyReference, GetOne } from './queries';
+import { Create, Delete, DeleteMany, Update, UpdateMany } from './commands';
 
 export interface IDataProvider extends ra.DataProvider {
   app: FireApp;
@@ -45,7 +45,7 @@ export function DataProvider(
       const errorMsg = ((error as any) || '').toString();
       const code = retrieveStatusCode(errorMsg);
       const errorObj = { status: code, message: errorMsg, json: res };
-      logError("DataProvider:", error, { errorMsg, code, errorObj });
+      logError('DataProvider:', error, { errorMsg, code, errorObj });
       throw errorObj;
     }
   }
@@ -75,9 +75,7 @@ export function DataProvider(
       resource: string,
       params: ra.GetManyReferenceParams
     ): Promise<ra.GetManyReferenceResult<RecordType>> {
-      return run(() =>
-        GetManyReference<RecordType>(resource, params, client)
-      );
+      return run(() => GetManyReference<RecordType>(resource, params, client));
     },
     update<RecordType extends ra.Record = ra.Record>(
       resource: string,
@@ -108,7 +106,7 @@ export function DataProvider(
       params: ra.DeleteManyParams
     ): Promise<ra.DeleteManyResult> {
       return run(() => DeleteMany(resource, params, client));
-    },
+    }
   };
 
   return newProviderApi;

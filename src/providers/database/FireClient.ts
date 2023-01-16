@@ -1,5 +1,9 @@
-import { set, get } from "lodash";
-import { TASK_CANCELED, TASK_PAUSED, TASK_RUNNING } from "../../misc/firebase-models";
+import { set, get } from 'lodash';
+import {
+  TASK_CANCELED,
+  TASK_PAUSED,
+  TASK_RUNNING
+} from '../../misc/firebase-models';
 import {
   AddCreatedByFields,
   AddUpdatedByFields,
@@ -9,11 +13,12 @@ import {
   logError,
   dispatch,
   translateDocToFirestore,
-  parseStoragePath,
-} from "../../misc";
-import { RAFirebaseOptions } from "../options";
-import { IFirebaseWrapper } from "./firebase/IFirebaseWrapper";
-import { IResource, ResourceManager } from "./ResourceManager";
+  parseStoragePath
+} from '../../misc';
+import { RAFirebaseOptions } from '../options';
+import { IFirebaseWrapper } from './firebase/IFirebaseWrapper';
+import { IResource, ResourceManager } from './ResourceManager';
+import { doc } from 'firebase/firestore';
 
 export class FireClient {
   public rm: ResourceManager;
@@ -32,7 +37,11 @@ export class FireClient {
     }
   }
 
-  public transformToDb(resourceName: string, documentData: any, docId: string): any {
+  public transformToDb(
+    resourceName: string,
+    documentData: any,
+    docId: string
+  ): any {
     if (typeof this.options.transformToDb === 'function') {
       return this.options.transformToDb(resourceName, documentData, docId);
     }
@@ -43,15 +52,20 @@ export class FireClient {
     if (!data) {
       return data;
     }
-    const docPath = r.collection.doc(id).path;
+    const docPath = doc(r.collection, id).path;
 
     const result = translateDocToFirestore(data);
     const uploads = result.uploads;
     await Promise.all(
-      uploads.map(async (u) => {
-        const storagePath = parseStoragePath(u.rawFile, docPath, u.fieldDotsPath, !!this.options.useFileNamesInStorage);
+      uploads.map(async u => {
+        const storagePath = parseStoragePath(
+          u.rawFile,
+          docPath,
+          u.fieldDotsPath,
+          !!this.options.useFileNamesInStorage
+        );
         const link = await this.saveFile(storagePath, u.rawFile);
-        set(data, u.fieldDotsPath + ".src", link);
+        set(data, u.fieldDotsPath + '.src', link);
       })
     );
     return data;
@@ -69,14 +83,18 @@ export class FireClient {
     storagePath: string,
     rawFile: any
   ): Promise<string | undefined> {
-    log("saveFile() saving file...", { storagePath, rawFile });
+    log('saveFile() saving file...', { storagePath, rawFile });
     try {
-      const { task, taskResult, downloadUrl } = this.fireWrapper.putFile(storagePath, rawFile);
+      const { task, taskResult, downloadUrl } = this.fireWrapper.putFile(
+        storagePath,
+        rawFile
+      );
       const { name } = rawFile;
       // monitor upload status & progress
       dispatch('FILE_UPLOAD_WILL_START', name);
-      task.on('state_changed', (snapshot) => {
-        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      task.on('state_changed', snapshot => {
+        const progress =
+          (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
         log('Upload is ' + progress + '% done');
         dispatch('FILE_UPLOAD_PROGRESS', name, progress);
         switch (snapshot.state) {
@@ -98,27 +116,24 @@ export class FireClient {
           // already handled by then
         }
       });
-      const [getDownloadURL] = await Promise.all([
-        downloadUrl,
-        taskResult,
-      ]);
+      const [getDownloadURL] = await Promise.all([downloadUrl, taskResult]);
       dispatch('FILE_UPLOAD_COMPLETE', name);
       dispatch('FILE_SAVED', name);
-      log("saveFile() saved file", {
+      log('saveFile() saved file', {
         storagePath,
         taskResult,
-        getDownloadURL,
+        getDownloadURL
       });
       return this.options.relativeFilePaths ? storagePath : getDownloadURL;
     } catch (storageError) {
-      if (get(storageError, 'code') === "storage/unknown") {
+      if (get(storageError, 'code') === 'storage/unknown') {
         logError(
           'saveFile() error saving file, No bucket found! Try clicking "Get Started" in firebase -> storage',
           { storageError }
         );
       } else {
-        logError("saveFile() error saving file", {
-          storageError,
+        logError('saveFile() error saving file', {
+          storageError
         });
       }
     }

@@ -6,6 +6,10 @@
       "coverage/lcov-report/*.js"
     ]
   },
+  "extends": [
+    "tslint-eslint-rules",
+    "tslint-config-prettier"
+  ],
   "rules": {
     "no-console": false,
     "ordered-imports": false,
@@ -40,7 +44,6 @@
     "prefer-conditional-expression": [true, "check-else-if"],
     "promise-function-async": true,
     "quotemark": [true, "single"],
-    "semicolon": [true, "always", "ignore-bound-class-methods"],
     "triple-equals": [true, "allow-null-check", "allow-undefined-check"],
     "no-unnecessary-callback-wrapper": true
   }

@@ -1,4 +1,17 @@
-import { FireStoreCollectionRef, FireStoreQuery, FireStoreQueryOrder } from 'misc/firebase-models';
+import {
+  where,
+  query,
+  QueryConstraint,
+  orderBy,
+  limit,
+  getDocs,
+  startAfter
+} from 'firebase/firestore';
+import {
+  FireStoreCollectionRef,
+  FireStoreQuery,
+  FireStoreQueryOrder
+} from 'misc/firebase-models';
 import { IFirestoreLogger, messageTypes } from '../../misc';
 import { findLastQueryCursor, getQueryCursor } from './queryCursors';
 
@@ -8,10 +21,15 @@ interface ParamsToQueryOptions {
   pagination?: boolean;
 }
 
+interface QueryPair {
+  noPagination: FireStoreQuery;
+  withPagination: FireStoreQuery;
+}
+
 const defaultParamsToQueryOptions = {
   filters: true,
   sort: true,
-  pagination: true,
+  pagination: true
 };
 
 export async function paramsToQuery<
@@ -22,79 +40,93 @@ export async function paramsToQuery<
   resourceName: string,
   flogger: IFirestoreLogger,
   options: ParamsToQueryOptions = defaultParamsToQueryOptions
-): Promise<FireStoreQuery> {
-  const filtersStepQuery = options.filters
-    ? filtersToQuery(collection, params.filter)
-    : collection;
+): Promise<QueryPair> {
+  const filterConstraints = options.filters
+    ? getFiltersConstraints(params.filter)
+    : [];
 
-  const sortStepQuery = options.sort
-    ? sortToQuery(filtersStepQuery, params.sort)
-    : filtersStepQuery;
+  const sortConstraints = options.sort ? getSortConstraints(params.sort) : [];
 
-  return options.pagination
-    ? paginationToQuery(
-        sortStepQuery,
-        params,
+  const paginationConstraints = options.pagination
+    ? await getPaginationConstraints(
         collection,
+        [...filterConstraints, ...sortConstraints],
+        params,
         resourceName,
         flogger
       )
-    : sortStepQuery;
+    : [];
+
+  return {
+    noPagination: query(
+      collection,
+      ...[...filterConstraints, ...sortConstraints]
+    ),
+    withPagination: query(
+      collection,
+      ...[...filterConstraints, ...sortConstraints, ...paginationConstraints]
+    )
+  };
 }
 
-export function filtersToQuery(
-  query: FireStoreQuery,
-  filters: { [fieldName: string]: any }
-): FireStoreQuery {
-  const res = Object.entries(filters).reduce((acc,[fieldName, fieldValue]) => {
-    const opStr = fieldValue && Array.isArray(fieldValue) ? 'in' : '==';
-    return acc.where(fieldName, opStr, fieldValue);
-  }, query);
-  return res;
+export function getFiltersConstraints(filters: {
+  [fieldName: string]: any;
+}): QueryConstraint[] {
+  return Object.entries(filters).flatMap(([fieldName, fieldValue]) => {
+    if (Array.isArray(fieldValue)) {
+      return [where(fieldName, 'in', fieldValue)];
+    } else {
+      return [
+        where(fieldName, '>=', fieldValue),
+        where(fieldName, '<', fieldValue)
+      ];
+    }
+  });
 }
 
-export function sortToQuery(
-  query: FireStoreQuery,
-  sort: { field: string; order: string }
-): FireStoreQuery {
+export function getSortConstraints(sort: {
+  field: string;
+  order: string;
+}): QueryConstraint[] {
   if (sort != null && sort.field !== 'id') {
     const { field, order } = sort;
     const parsedOrder = order.toLocaleLowerCase() as FireStoreQueryOrder;
-    return query.orderBy(field, parsedOrder);
+    return [orderBy(field, parsedOrder)];
   }
-  return query;
+  return [];
 }
 
-async function paginationToQuery<TParams extends messageTypes.IParamsGetList>(
-  query: FireStoreQuery,
+async function getPaginationConstraints<
+  TParams extends messageTypes.IParamsGetList
+>(
+  collectionRef: FireStoreCollectionRef,
+  queryConstraints: QueryConstraint[],
   params: TParams,
-  collection: FireStoreCollectionRef,
   resourceName: string,
   flogger: IFirestoreLogger
-): Promise<FireStoreQuery> {
+): Promise<QueryConstraint[]> {
   const { page, perPage } = params.pagination;
+
   if (page === 1) {
-    query = query.limit(perPage);
+    return [limit(perPage)];
   } else {
     let queryCursor = await getQueryCursor(
-      collection,
+      collectionRef,
       params,
       resourceName,
       flogger
     );
     if (!queryCursor) {
       queryCursor = await findLastQueryCursor(
-        collection,
-        query,
+        collectionRef,
+        queryConstraints,
         params,
         resourceName,
         flogger
       );
     }
-    query = query.startAfter(queryCursor).limit(perPage);
+    return [startAfter(queryCursor), limit(perPage)];
   }
-
-  return query;
 }
 
 export function getFullParamsForQuery<
@@ -105,9 +137,9 @@ export function getFullParamsForQuery<
     filter: softdeleteEnabled
       ? {
           deleted: false,
-          ...reactAdminParams.filter,
+          ...reactAdminParams.filter
         }
-      : reactAdminParams.filter,
+      : reactAdminParams.filter
   };
 }
 
@@ -118,7 +150,7 @@ export function getNextPageParams<TParams extends messageTypes.IParamsGetList>(
     ...params,
     pagination: {
       ...params.pagination,
-      page: params.pagination.page + 1,
-    },
+      page: params.pagination.page + 1
+    }
   };
 }
