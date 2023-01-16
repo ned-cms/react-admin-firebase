@@ -1,5 +1,20 @@
-import { FireStoreCollectionRef, FireStoreDocumentSnapshot, FireStoreQuery } from 'misc/firebase-models';
+import {
+  FireStoreCollectionRef,
+  FireStoreDocumentSnapshot,
+  FireStoreQuery
+} from 'misc/firebase-models';
 import { IFirestoreLogger, messageTypes } from '../../misc';
+import {
+  getDoc,
+  doc,
+  QueryConstraint,
+  query,
+  startAt,
+  limit,
+  getDocs,
+  startAfter
+} from 'firebase/firestore';
+import { ref } from 'firebase/storage';
 
 export function setQueryCursor(
   doc: FireStoreDocumentSnapshot,
@@ -32,11 +47,10 @@ export async function getQueryCursor(
     return false;
   }
 
-  const doc = await collection.doc(docId).get();
+  const docSnapshot = await getDoc(doc(collection, docId));
   flogger.logDocument(1)();
-  if (doc.exists) {
-    // incrementFirebaseReadsCounter(1);
-    return doc;
+  if (docSnapshot.exists()) {
+    return docSnapshot;
   }
   return false;
 }
@@ -46,14 +60,14 @@ export function clearQueryCursors(resourceName: string) {
   const localCursorKeys = localStorage.getItem(allCursorsKey);
   if (localCursorKeys) {
     const cursors: string[] = JSON.parse(localCursorKeys);
-    cursors.forEach((cursor) => localStorage.removeItem(cursor));
+    cursors.forEach(cursor => localStorage.removeItem(cursor));
     localStorage.removeItem(allCursorsKey);
   }
 }
 
 export async function findLastQueryCursor(
   collection: FireStoreCollectionRef,
-  queryBase: FireStoreQuery,
+  queryConstraints: QueryConstraint[],
   params: messageTypes.IParamsGetList,
   resourceName: string,
   flogger: IFirestoreLogger
@@ -66,8 +80,8 @@ export async function findLastQueryCursor(
   const currentPageParams = {
     ...params,
     pagination: {
-      ...params.pagination,
-    },
+      ...params.pagination
+    }
   };
   while (!lastQueryCursor && currentPage > 1) {
     currentPage--;
@@ -80,19 +94,22 @@ export async function findLastQueryCursor(
       flogger
     );
   }
-  const limit = (page - currentPage) * perPage;
+  const pageLimit = (page - currentPage) * perPage;
   const isFirst = currentPage === 1;
 
   function getQuery() {
     if (isFirst) {
-      return queryBase.limit(limit);
+      return query(collection, ...[...queryConstraints, limit(pageLimit)]);
     } else {
-      return queryBase.startAt(lastQueryCursor).limit(limit);
+      return query(
+        collection,
+        ...[...queryConstraints, startAfter(lastQueryCursor), limit(pageLimit)]
+      );
     }
   }
 
   const newQuery = getQuery();
-  const snapshots = await newQuery.get();
+  const snapshots = await getDocs(newQuery);
   const docsLength = snapshots.docs.length;
   flogger.logDocument(docsLength)();
   const lastDocIndex = docsLength - 1;

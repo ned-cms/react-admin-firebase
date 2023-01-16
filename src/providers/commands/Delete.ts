@@ -1,7 +1,8 @@
-import { FireClient } from "../database/FireClient";
-import { log } from "../../misc";
-import * as ra from "../../misc/react-admin-models";
-import { DeleteSoft } from "./Delete.Soft";
+import { FireClient } from '../database/FireClient';
+import { log } from '../../misc';
+import * as ra from '../../misc/react-admin-models';
+import { DeleteSoft } from './Delete.Soft';
+import { deleteDoc, doc } from 'firebase/firestore';
 
 export async function Delete<T extends ra.Record>(
   resourceName: string,
@@ -13,14 +14,14 @@ export async function Delete<T extends ra.Record>(
     return DeleteSoft(resourceName, params, client);
   }
   const r = await rm.TryGetResource(resourceName);
-  log("apiDelete", { resourceName, resource: r, params });
+  log('apiDelete', { resourceName, resource: r, params });
   try {
-    const id = params.id + "";
-    await r.collection.doc(id).delete();
+    const id = params.id + '';
+    await deleteDoc(doc(r.collection, id));
   } catch (error) {
     throw new Error(error as any);
   }
   return {
-    data: params.previousData as T,
+    data: params.previousData as T
   };
 }

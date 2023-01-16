@@ -1,6 +1,7 @@
-import { FireClient } from "../database/FireClient";
-import { log } from "../../misc";
-import * as ra from "../../misc/react-admin-models";
+import { FireClient } from '../database/FireClient';
+import { log } from '../../misc';
+import * as ra from '../../misc/react-admin-models';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 export async function Create<T extends ra.Record>(
   resourceName: string,
@@ -9,33 +10,43 @@ export async function Create<T extends ra.Record>(
 ): Promise<ra.CreateResult<T>> {
   const { rm, fireWrapper } = client;
   const r = await rm.TryGetResource(resourceName);
-  log("Create", { resourceName, resource: r, params });
+  log('Create', { resourceName, resource: r, params });
   const hasOverridenDocId = params.data && params.data.id;
-  log("Create", { hasOverridenDocId });
+  log('Create', { hasOverridenDocId });
   if (hasOverridenDocId) {
     const overridenId = params.data.id;
-    const exists = (await r.collection.doc(overridenId).get()).exists;
+    const exists = (await getDoc(doc(r.collection, overridenId))).exists();
     if (exists) {
       throw new Error(
         `the id:"${overridenId}" already exists, please use a unique string if overriding the 'id' field`
       );
     }
-    const data = await client.parseDataAndUpload(r, overridenId, params.data);
+    const createData = await client.parseDataAndUpload(
+      r,
+      overridenId,
+      params.data
+    );
     if (!overridenId) {
-      throw new Error("id must be a valid string");
+      throw new Error('id must be a valid string');
     }
-    const docObj = { ...data };
-    client.checkRemoveIdField(docObj, overridenId);
-    await client.addCreatedByFields(docObj);
-    await client.addUpdatedByFields(docObj);
-    const docObjTransformed = client.transformToDb(resourceName, docObj, overridenId);
-    log("Create", { docObj });
-    await r.collection.doc(overridenId).set(docObjTransformed, { merge: false });
+    const createDocObj = { ...createData };
+    client.checkRemoveIdField(createDocObj, overridenId);
+    await client.addCreatedByFields(createDocObj);
+    await client.addUpdatedByFields(createDocObj);
+    const createDocObjTransformed = client.transformToDb(
+      resourceName,
+      createDocObj,
+      overridenId
+    );
+    log('Create', { docObj: createDocObj });
+    await setDoc(doc(r.collection, overridenId), createDocObjTransformed, {
+      merge: false
+    });
     return {
       data: {
-        ...docObjTransformed,
-        id: overridenId,
-      },
+        ...createDocObjTransformed,
+        id: overridenId
+      }
     };
   }
   const newId = fireWrapper.dbMakeNewId();
@@ -45,11 +56,11 @@ export async function Create<T extends ra.Record>(
   await client.addCreatedByFields(docObj);
   await client.addUpdatedByFields(docObj);
   const docObjTransformed = client.transformToDb(resourceName, docObj, newId);
-  await r.collection.doc(newId).set(docObjTransformed, { merge: false });
+  await setDoc(doc(r.collection, newId), docObjTransformed, { merge: false });
   return {
     data: {
       ...docObjTransformed,
-      id: newId,
-    },
+      id: newId
+    }
   };
 }

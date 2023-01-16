@@ -4,7 +4,7 @@ import {
   filterArray,
   log,
   recursivelyMapStorageUrls,
-  sortArray,
+  sortArray
 } from '../../misc';
 import * as ra from '../../misc/react-admin-models';
 
@@ -17,11 +17,7 @@ export async function GetList<T extends ra.Record>(
   const { rm, fireWrapper, options } = client;
 
   if (options?.lazyLoading?.enabled) {
-    const lazyClient = new FirebaseLazyLoadingClient(
-      options,
-      rm,
-      client
-    );
+    const lazyClient = new FirebaseLazyLoadingClient(options, rm, client);
     return lazyClient.apiGetList<T>(resourceName, params);
   }
 
@@ -42,7 +38,7 @@ export async function GetList<T extends ra.Record>(
   }
   let softDeleted = data;
   if (options.softDelete && !Object.keys(filterSafe).includes('deleted')) {
-    softDeleted = data.filter((doc) => !doc.deleted);
+    softDeleted = data.filter(doc => !doc.deleted);
   }
   const filteredData = filterArray(softDeleted, filterSafe);
   const pageStart = (params.pagination.page - 1) * params.pagination.perPage;
@@ -51,17 +47,17 @@ export async function GetList<T extends ra.Record>(
   const total = filteredData.length;
 
   if (options.relativeFilePaths) {
-    const data = await Promise.all(
-      dataPage.map((doc) => recursivelyMapStorageUrls(fireWrapper, doc))
+    const fetchedData = await Promise.all(
+      dataPage.map(doc => recursivelyMapStorageUrls(fireWrapper, doc))
     );
     return {
-      data,
-      total,
+      data: fetchedData,
+      total
     };
   }
 
   return {
     data: dataPage,
-    total,
+    total
   };
 }

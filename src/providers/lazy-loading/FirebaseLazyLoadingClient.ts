@@ -2,19 +2,23 @@ import {
   log,
   messageTypes,
   parseFireStoreDocument,
-  recursivelyMapStorageUrls,
+  recursivelyMapStorageUrls
 } from '../../misc';
-import { IResource, ResourceManager } from '../database/ResourceManager';
+import { IResource, ResourceManager } from '../database';
 import { RAFirebaseOptions } from '../options';
 import * as ra from '../../misc/react-admin-models';
 import {
   getFullParamsForQuery,
   getNextPageParams,
-  paramsToQuery,
+  paramsToQuery
 } from './paramsToQuery';
 import { clearQueryCursors, setQueryCursor } from './queryCursors';
 import { FireClient } from 'providers/database';
-import { FireStoreCollectionRef, FireStoreDocumentSnapshot } from 'misc/firebase-models';
+import {
+  FireStoreCollectionRef,
+  FireStoreDocumentSnapshot
+} from 'misc/firebase-models';
+import { getCountFromServer, getDocs } from 'firebase/firestore';
 
 export class FirebaseLazyLoadingClient {
   constructor(
@@ -35,45 +39,32 @@ export class FirebaseLazyLoadingClient {
 
     log('apiGetListLazy', { resourceName, params });
 
-    const query = await paramsToQuery(
+    const { noPagination, withPagination } = await paramsToQuery(
       r.collection,
       params,
       resourceName,
       this.client.flogger
     );
 
-    const snapshots = await query.get();
+    const snapshots = await getDocs(withPagination);
 
     const resultsCount = snapshots.docs.length;
     if (!resultsCount) {
       log('apiGetListLazy', {
-        message: 'There are not records for given query',
+        message: 'There are not records for given query'
       });
       return { data: [], total: 0 };
     }
     this.client.flogger.logDocument(resultsCount)();
 
-    const data = snapshots.docs.map(doc => parseFireStoreDocument<T>(doc));
+    // tslint:disable-next-line
+    const data = snapshots.docs.map(d => parseFireStoreDocument<T>(d));
+
     const nextPageCursor = snapshots.docs[snapshots.docs.length - 1];
     // After fetching documents save queryCursor for next page
     setQueryCursor(nextPageCursor, getNextPageParams(params), resourceName);
     // Hardcoded to allow next pages, as we don't have total number of items
-    let total = 9000;
-
-    // Check for next pages
-    // If it's last page, we can count all items and disable going to next page
-    const isOnLastPage = await this.checkIfOnLastPage(
-      r.collection,
-      params,
-      resourceName,
-      nextPageCursor
-    );
-
-    if (isOnLastPage) {
-      const { page, perPage } = params.pagination;
-      total = (page - 1) * perPage + data.length;
-      log('apiGetListLazy', { message: "It's last page of collection." });
-    }
+    let total = await getCountFromServer(noPagination);
 
     if (this.options.relativeFilePaths) {
       const parsedData = await Promise.all(
@@ -91,22 +82,22 @@ export class FirebaseLazyLoadingClient {
       log('apiGetListLazy result', {
         docs: parsedData,
         resource: r,
-        collectionPath: r.collection.path,
+        collectionPath: r.collection.path
       });
 
       return {
         data: parsedData,
-        total,
+        total: total.data().count
       };
     }
 
     log('apiGetListLazy result', {
       docs: data,
       resource: r,
-      collectionPath: r.collection.path,
+      collectionPath: r.collection.path
     });
 
-    return { data, total };
+    return { data, total: total.data().count };
   }
 
   public async apiGetManyReference(
@@ -117,31 +108,31 @@ export class FirebaseLazyLoadingClient {
     log('apiGetManyReferenceLazy', {
       resourceName,
       resource: r,
-      reactAdminParams,
+      reactAdminParams
     });
     const filterWithTarget = {
       ...reactAdminParams.filter,
-      [reactAdminParams.target]: reactAdminParams.id,
+      [reactAdminParams.target]: reactAdminParams.id
     };
     const params = getFullParamsForQuery(
       {
         ...reactAdminParams,
-        filter: filterWithTarget,
+        filter: filterWithTarget
       },
       !!this.options.softDelete
     );
 
-    const query = await paramsToQuery(
+    const { withPagination } = await paramsToQuery(
       r.collection,
       params,
       resourceName,
       this.client.flogger
     );
 
-    const snapshots = await query.get();
+    const snapshots = await getDocs(withPagination);
     const resultsCount = snapshots.docs.length;
     this.client.flogger.logDocument(resultsCount)();
-    const data = snapshots.docs.map(d => parseFireStoreDocument(d));
+    const data = snapshots.docs.map(parseFireStoreDocument);
     if (this.options.relativeFilePaths) {
       const parsedData = await Promise.all(
         data.map(async (doc: any) => {
@@ -158,56 +149,21 @@ export class FirebaseLazyLoadingClient {
       log('apiGetManyReferenceLazy result', {
         docs: parsedData,
         resource: r,
-        collectionPath: r.collection.path,
+        collectionPath: r.collection.path
       });
 
       return {
         data: parsedData,
-        total: data.length,
+        total: data.length
       };
     }
 
     log('apiGetManyReferenceLazy result', {
       docs: data,
       resource: r,
-      collectionPath: r.collection.path,
+      collectionPath: r.collection.path
     });
     return { data, total: data.length };
-  }
-
-  private async checkIfOnLastPage<TParams extends messageTypes.IParamsGetList>(
-    collection: FireStoreCollectionRef,
-    params: TParams,
-    resourceName: string,
-    nextPageCursor: FireStoreDocumentSnapshot,
-  ): Promise<boolean> {
-    const query = await paramsToQuery(
-      collection,
-      params,
-      resourceName,
-      this.client.flogger,
-      {
-        filters: true,
-        sort: true,
-      }
-    );
-    if (!nextPageCursor) {
-      throw new Error('Page cursor was empty...');
-    }
-    const nextElementSnapshot = await query
-      .startAfter(nextPageCursor)
-      .limit(1)
-      .get();
-
-    if (!nextElementSnapshot.empty) {
-      // this.incrementFirebaseReadsCounter(1);
-    }
-
-    return nextElementSnapshot.empty;
-  }
-
-  public clearQueryCursors(resourceName: string) {
-    clearQueryCursors(resourceName);
   }
 
   private async tryGetResource(
