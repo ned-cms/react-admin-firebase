@@ -68,5 +68,6 @@
   "source": "src/index.ts",
   "engines": {
     "node": ">=10"
-  }
+  },
+  "packageManager": "yarn@3.3.1"
 }

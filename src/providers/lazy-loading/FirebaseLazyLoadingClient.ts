@@ -12,12 +12,8 @@ import {
   getNextPageParams,
   paramsToQuery
 } from './paramsToQuery';
-import { clearQueryCursors, setQueryCursor } from './queryCursors';
+import { setQueryCursor } from './queryCursors';
 import { FireClient } from 'providers/database';
-import {
-  FireStoreCollectionRef,
-  FireStoreDocumentSnapshot
-} from 'misc/firebase-models';
 import { getCountFromServer, getDocs } from 'firebase/firestore';
 
 export class FirebaseLazyLoadingClient {

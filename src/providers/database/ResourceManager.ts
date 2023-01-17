@@ -1,3 +1,4 @@
+import { doc, getDoc, getDocs } from 'firebase/firestore';
 import { RAFirebaseOptions } from '../options';
 import { IFirebaseWrapper } from './firebase/IFirebaseWrapper';
 import {
@@ -8,8 +9,7 @@ import {
   IFirestoreLogger,
   parseFireStoreDocument
 } from '../../misc';
-import { FireStoreCollectionRef, FireStoreQuery } from 'misc/firebase-models';
-import { doc, getDoc, getDocs } from 'firebase/firestore';
+import { FireStoreCollectionRef, FireStoreQuery } from '../../misc/firebase-models';
 
 type IResourceItem = {} & { id: string; deleted?: boolean };
 export interface IResource {

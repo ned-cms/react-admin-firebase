@@ -1,3 +1,4 @@
+import { doc } from 'firebase/firestore';
 import { set, get } from 'lodash';
 import {
   TASK_CANCELED,
@@ -18,7 +19,6 @@ import {
 import { RAFirebaseOptions } from '../options';
 import { IFirebaseWrapper } from './firebase/IFirebaseWrapper';
 import { IResource, ResourceManager } from './ResourceManager';
-import { doc } from 'firebase/firestore';
 
 export class FireClient {
   public rm: ResourceManager;

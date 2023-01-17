@@ -1,4 +1,4 @@
-import { FireApp } from 'misc/firebase-models';
+import { FireApp } from '../misc/firebase-models';
 
 export interface RAFirebaseOptions {
   // Use a different root document to set your resource collections,

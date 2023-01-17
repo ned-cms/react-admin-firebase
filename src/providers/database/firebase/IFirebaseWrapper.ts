@@ -1,5 +1,7 @@
 import 'firebase/compat/firestore';
 import 'firebase/compat/storage';
+import firebase from 'firebase/compat';
+
 
 import { RAFirebaseOptions } from '../../options';
 import {
@@ -13,8 +15,8 @@ import {
   FireStoragePutFileResult,
   FireStoreCollectionRef,
   FireStoreBatch
-} from 'misc/firebase-models';
-import firebase from 'firebase/compat';
+} from '../../../misc/firebase-models';
+
 import firestore = firebase.firestore;
 
 export interface IFirebaseWrapper {

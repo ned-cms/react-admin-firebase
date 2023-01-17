@@ -11,7 +11,7 @@ import {
   FireStoreCollectionRef,
   FireStoreQuery,
   FireStoreQueryOrder
-} from 'misc/firebase-models';
+} from '../../misc/firebase-models';
 import { IFirestoreLogger, messageTypes } from '../../misc';
 import { findLastQueryCursor, getQueryCursor } from './queryCursors';
 

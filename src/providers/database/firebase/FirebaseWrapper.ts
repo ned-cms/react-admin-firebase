@@ -25,8 +25,8 @@ import {
   inMemoryPersistence
 } from 'firebase/auth';
 
-import { log } from 'misc';
-import { RAFirebaseOptions } from 'providers/options';
+import { log } from '../../../misc';
+import { RAFirebaseOptions } from '../../options';
 import {
   FireApp,
   FireAuth,
@@ -38,7 +38,7 @@ import {
   FireStoreCollectionRef,
   FireUploadTaskSnapshot,
   FireUser
-} from 'misc/firebase-models';
+} from '../../../misc/firebase-models';
 
 export class FirebaseWrapper implements IFirebaseWrapper {
   private readonly app: FireApp;
