@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
     "outDir": "dist",
-    "module": "es2020",
+    "module": "CommonJS",
     "moduleResolution": "node",
-    "target": "es2021",
+    "target": "ES5",
     "lib": [
-      "es2021",
+      "es2019",
       "dom"
     ],
     "baseUrl": "src",
@@ -13,7 +13,6 @@
     "preserveConstEnums": true,
     "sourceMap": true,
     "resolveJsonModule": true,
-    "isolatedModules": false,
     "skipLibCheck": true,
     "noImplicitAny": true,
     "esModuleInterop": true,

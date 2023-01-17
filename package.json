@@ -1,7 +1,8 @@
 {
   "name": "@ned-cms/react-admin-firebase",
   "description": "A firebase data provider for the React Admin framework",
-  "version": "5.0.1",
+  "version": "5.0.2",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ned-cms/react-admin-firebase.git",
@@ -62,12 +63,19 @@
     "LICENSE",
     "README.md"
   ],
-  "main": "dist/index.js",
+  "main": "dist/index.cjs",
+  "module": "dist/index.esm.js",
   "types": "dist/index.d.ts",
   "umd:main": "dist/index.umd.js",
   "source": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.esm.js"
+    }
+  },
   "engines": {
-    "node": ">=10"
+    "node": ">=18"
   },
   "packageManager": "yarn@3.3.1"
 }

@@ -42,6 +42,8 @@ export class FirebaseLazyLoadingClient {
       this.client.flogger
     );
 
+    log('QUERIES', {noPagination, withPagination})
+
     const snapshots = await getDocs(withPagination);
 
     const resultsCount = snapshots.docs.length;
