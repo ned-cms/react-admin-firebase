@@ -1,7 +1,7 @@
 {
   "name": "@ned-cms/react-admin-firebase",
   "description": "A firebase data provider for the React Admin framework",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ned-cms/react-admin-firebase.git",
