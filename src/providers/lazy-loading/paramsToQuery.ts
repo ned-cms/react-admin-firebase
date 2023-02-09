@@ -75,7 +75,7 @@ export function getFiltersConstraints(filters: {
   return Object.entries(filters).flatMap(([fieldName, fieldValue]) => {
     if (Array.isArray(fieldValue)) {
       return [where(fieldName, 'array-contains-any', fieldValue)];
-    } else if (filters.length() === 1 && isNaN(fieldValue)) {
+    } else if (Object.keys(filters).length === 1 && isNaN(fieldValue)) {
       return [
         where(fieldName, '>=', fieldValue),
         where(fieldName, '<', fieldValue + 'z')
